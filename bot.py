@@ -22,7 +22,7 @@ return member.status in ["administrator", "creator"]
 async def gmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if not await is_admin(update, context):
 await update.message.reply_text("❌ Only admins can use this")
-return
+    return
 
 if update.message.reply_to_message:
 user_id = update.message.reply_to_message.from_user.id
@@ -38,8 +38,8 @@ await update.message.reply_text("Reply to user")
 # ungmute command
 async def ungmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if not await is_admin(update, context):
-await update.message.reply_text("❌ Only admins can use this")
-return
+    await update.message.reply_text("❌ Only admins can use this")
+    return
 
 if update.message.reply_to_message:
 user_id = update.message.reply_to_message.from_user.id
