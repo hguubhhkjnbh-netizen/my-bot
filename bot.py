@@ -28,21 +28,21 @@ return member.status in ["administrator", "creator"]
 
 # Save group info (auto)
 async def save_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
-chat = update.effective_chat
+    chat = update.effective_chat
 
-if chat.type in ["group", "supergroup"]:
-cursor.execute(
-"INSERT OR IGNORE INTO groups VALUES (?, ?)",
-(chat.id, chat.title)
-)
-conn.commit()
+    if chat.type in ["group", "supergroup"]:
+        cursor.execute(
+            "INSERT OR IGNORE INTO groups VALUES (?, ?)",
+            (chat.id, chat.title)
+        )
+        conn.commit()
 
 
 # GMUTE
 async def gmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-if not await is_admin(update, context):
-await update.message.reply_text("❌ Only admins can use this")
-return
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Only admins can use this")
+        return
 
 if update.message.reply_to_message:
 user_id = update.message.reply_to_message.from_user.id
@@ -58,9 +58,9 @@ await update.message.reply_text("Reply to user")
 
 # UNGMUTE
 async def ungmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
-if not await is_admin(update, context):
-await update.message.reply_text("❌ Only admins can use this")
-return
+    if not await is_admin(update, context):
+        await update.message.reply_text("❌ Only admins can use this")
+        return
 
 if update.message.reply_to_message:
 user_id = update.message.reply_to_message.from_user.id
