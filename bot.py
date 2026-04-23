@@ -12,11 +12,11 @@ conn.commit()
 
 # Check admin
 async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-member = await context.bot.get_chat_member(
-update.effective_chat.id,
-update.effective_user.id
-)
-return member.status in ["administrator", "creator"]
+    member = await context.bot.get_chat_member(
+        update.effective_chat.id,
+        update.effective_user.id
+    )
+    return member.status in ["administrator", "creator"]
 
 # gmute command
 async def gmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
