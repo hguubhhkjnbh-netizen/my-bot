@@ -7,22 +7,42 @@ TOKEN = "8680039869:AAHwqVOJ7lIXKHV5tUfDnwrHkJTGeFv2R00"
 # Database setup
 conn = sqlite3.connect("gmute.db", check_same_thread=False)
 cursor = conn.cursor()
+
+# muted users table
 cursor.execute("CREATE TABLE IF NOT EXISTS muted (user_id INTEGER, chat_id INTEGER)")
+
+# groups table
+cursor.execute("CREATE TABLE IF NOT EXISTS groups (chat_id INTEGER PRIMARY KEY, chat_name TEXT)")
+
 conn.commit()
+
 
 # Check admin
 async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    member = await context.bot.get_chat_member(
-        update.effective_chat.id,
-        update.effective_user.id
-    )
-    return member.status in ["administrator", "creator"]
+member = await context.bot.get_chat_member(
+update.effective_chat.id,
+update.effective_user.id
+)
+return member.status in ["administrator", "creator"]
 
-# gmute command
+
+# Save group info (auto)
+async def save_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
+chat = update.effective_chat
+
+if chat.type in ["group", "supergroup"]:
+cursor.execute(
+"INSERT OR IGNORE INTO groups VALUES (?, ?)",
+(chat.id, chat.title)
+)
+conn.commit()
+
+
+# GMUTE
 async def gmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if not await is_admin(update, context):
 await update.message.reply_text("❌ Only admins can use this")
-    return
+return
 
 if update.message.reply_to_message:
 user_id = update.message.reply_to_message.from_user.id
@@ -35,29 +55,37 @@ await update.message.reply_text("✅ User muted")
 else:
 await update.message.reply_text("Reply to user")
 
-# ungmute command
+
+# UNGMUTE
 async def ungmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if not await is_admin(update, context):
-    await update.message.reply_text("❌ Only admins can use this")
-    return
+await update.message.reply_text("❌ Only admins can use this")
+return
 
 if update.message.reply_to_message:
 user_id = update.message.reply_to_message.from_user.id
 chat_id = update.effective_chat.id
 
-cursor.execute("DELETE FROM muted WHERE user_id=? AND chat_id=?", (user_id, chat_id))
+cursor.execute(
+"DELETE FROM muted WHERE user_id=? AND chat_id=?",
+(user_id, chat_id)
+)
 conn.commit()
 
 await update.message.reply_text("✅ User unmuted")
 else:
 await update.message.reply_text("Reply to user")
 
-# Delete muted messages
+
+# DELETE MUTED MESSAGES
 async def delete_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
 user_id = update.message.from_user.id
 chat_id = update.effective_chat.id
 
-cursor.execute("SELECT * FROM muted WHERE user_id=? AND chat_id=?", (user_id, chat_id))
+cursor.execute(
+"SELECT * FROM muted WHERE user_id=? AND chat_id=?",
+(user_id, chat_id)
+)
 result = cursor.fetchone()
 
 if result:
@@ -66,11 +94,35 @@ await update.message.delete()
 except:
 pass
 
-# Start bot
+
+# SHOW GROUPS
+async def groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
+cursor.execute("SELECT * FROM groups")
+data = cursor.fetchall()
+
+if not data:
+await update.message.reply_text("No groups found")
+return
+
+text = "📢 Bot Groups:\n\n"
+for chat_id, name in data:
+text += f"{name} → `{chat_id}`\n"
+
+await update.message.reply_text(text)
+
+
+# MAIN
 app = ApplicationBuilder().token(TOKEN).build()
 
+# handlers
 app.add_handler(CommandHandler("gmute", gmute))
 app.add_handler(CommandHandler("ungmute", ungmute))
+app.add_handler(CommandHandler("groups", groups))
+
+# auto save group
+app.add_handler(MessageHandler(filters.ALL, save_group))
+
+# delete muted msgs
 app.add_handler(MessageHandler(filters.ALL, delete_msg))
 
 print("Bot running...")
