@@ -45,15 +45,15 @@ async def gmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
 if update.message.reply_to_message:
-user_id = update.message.reply_to_message.from_user.id
-chat_id = update.effective_chat.id
+    user_id = update.message.reply_to_message.from_user.id
+    chat_id = update.effective_chat.id
 
-cursor.execute("INSERT INTO muted VALUES (?, ?)", (user_id, chat_id))
-conn.commit()
+    cursor.execute("INSERT INTO muted VALUES (?, ?)", (user_id, chat_id))
+    conn.commit()
 
-await update.message.reply_text("✅ User muted")
+    await update.message.reply_text("✅ User muted")
 else:
-await update.message.reply_text("Reply to user")
+    await update.message.reply_text("Reply to user")
 
 
 # UNGMUTE
@@ -63,8 +63,8 @@ async def ungmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
 if update.message.reply_to_message:
-user_id = update.message.reply_to_message.from_user.id
-chat_id = update.effective_chat.id
+    user_id = ...
+    chat_id = ...
 
 cursor.execute(
 "DELETE FROM muted WHERE user_id=? AND chat_id=?",
