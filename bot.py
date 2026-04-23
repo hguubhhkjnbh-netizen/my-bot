@@ -2,22 +2,17 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 import sqlite3
 
-TOKEN = "8680039869:AAHwqVOJ7lIXKHV5tUfDnwrHkJTGeFv2R00"
+TOKEN = "8680039869:AAHIewnkNkH-7fRsp8TCzk0TqIEX_S2hXe0"
 
-# Database setup
+# DATABASE
 conn = sqlite3.connect("gmute.db", check_same_thread=False)
 cursor = conn.cursor()
 
-# muted users table
 cursor.execute("CREATE TABLE IF NOT EXISTS muted (user_id INTEGER, chat_id INTEGER)")
-
-# groups table
 cursor.execute("CREATE TABLE IF NOT EXISTS groups (chat_id INTEGER PRIMARY KEY, chat_name TEXT)")
-
 conn.commit()
 
-
-# Check admin
+# CHECK ADMIN
 async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     member = await context.bot.get_chat_member(
         update.effective_chat.id,
@@ -25,8 +20,7 @@ async def is_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return member.status in ["administrator", "creator"]
 
-
-# Save group info (auto)
+# AUTO SAVE GROUP
 async def save_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
 
@@ -37,24 +31,25 @@ async def save_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         conn.commit()
 
-
 # GMUTE
 async def gmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         await update.message.reply_text("❌ Only admins can use this")
         return
 
-if update.message.reply_to_message:
-    user_id = update.message.reply_to_message.from_user.id
-    chat_id = update.effective_chat.id
+    if update.message.reply_to_message:
+        user_id = update.message.reply_to_message.from_user.id
+        chat_id = update.effective_chat.id
 
-    cursor.execute("INSERT INTO muted VALUES (?, ?)", (user_id, chat_id))
-    conn.commit()
+        cursor.execute(
+            "INSERT INTO muted VALUES (?, ?)",
+            (user_id, chat_id)
+        )
+        conn.commit()
 
-    await update.message.reply_text("✅ User muted")
-else:
-    await update.message.reply_text("Reply to user")
-
+        await update.message.reply_text("✅ User muted")
+    else:
+        await update.message.reply_text("Reply to user")
 
 # UNGMUTE
 async def ungmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -62,67 +57,60 @@ async def ungmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Only admins can use this")
         return
 
-if update.message.reply_to_message:
-    user_id = ...
-    chat_id = ...
+    if update.message.reply_to_message:
+        user_id = update.message.reply_to_message.from_user.id
+        chat_id = update.effective_chat.id
 
-cursor.execute(
-"DELETE FROM muted WHERE user_id=? AND chat_id=?",
-(user_id, chat_id)
-)
-conn.commit()
+        cursor.execute(
+            "DELETE FROM muted WHERE user_id=? AND chat_id=?",
+            (user_id, chat_id)
+        )
+        conn.commit()
 
-await update.message.reply_text("✅ User unmuted")
-else:
-await update.message.reply_text("Reply to user")
+        await update.message.reply_text("✅ User unmuted")
+    else:
+        await update.message.reply_text("Reply to user")
 
-
-# DELETE MUTED MESSAGES
+# DELETE MUTED MSG
 async def delete_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
-user_id = update.message.from_user.id
-chat_id = update.effective_chat.id
+    user_id = update.message.from_user.id
+    chat_id = update.effective_chat.id
 
-cursor.execute(
-"SELECT * FROM muted WHERE user_id=? AND chat_id=?",
-(user_id, chat_id)
-)
-result = cursor.fetchone()
+    cursor.execute(
+        "SELECT * FROM muted WHERE user_id=? AND chat_id=?",
+        (user_id, chat_id)
+    )
+    result = cursor.fetchone()
 
-if result:
-try:
-await update.message.delete()
-except:
-pass
-
+    if result:
+        try:
+            await update.message.delete()
+        except:
+            pass
 
 # SHOW GROUPS
 async def groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
-cursor.execute("SELECT * FROM groups")
-data = cursor.fetchall()
+    cursor.execute("SELECT * FROM groups")
+    data = cursor.fetchall()
 
-if not data:
-await update.message.reply_text("No groups found")
-return
+    if not data:
+        await update.message.reply_text("No groups found")
+        return
 
-text = "📢 Bot Groups:\n\n"
-for chat_id, name in data:
-text += f"{name} → `{chat_id}`\n"
+    text = "📢 Bot Groups:\n\n"
+    for chat_id, name in data:
+        text += f"{name} → {chat_id}\n"
 
-await update.message.reply_text(text)
-
+    await update.message.reply_text(text)
 
 # MAIN
 app = ApplicationBuilder().token(TOKEN).build()
 
-# handlers
 app.add_handler(CommandHandler("gmute", gmute))
 app.add_handler(CommandHandler("ungmute", ungmute))
 app.add_handler(CommandHandler("groups", groups))
 
-# auto save group
 app.add_handler(MessageHandler(filters.ALL, save_group))
-
-# delete muted msgs
 app.add_handler(MessageHandler(filters.ALL, delete_msg))
 
 print("Bot running...")
